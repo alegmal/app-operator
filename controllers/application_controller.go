@@ -18,18 +18,24 @@ package controllers
 
 import (
 	"context"
-	"errors"
-
+	
 	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
+	
+	ctrl "sigs.k8s.io/controller-runtime"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	appsv1 "github.com/alegmal/app-operator/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
 	types "k8s.io/apimachinery/pkg/types"
+	k8sappsv1 "k8s.io/api/apps/v1"
 )
+
+// labelsForApplication generates a set of labels based on the provided application name.
+func labelsForApplication(name string) map[string]string {
+	return map[string]string{"app": name}
+}
 
 // ApplicationReconciler reconciles a Application object
 type ApplicationReconciler struct {
@@ -56,7 +62,7 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	// Get the Application instance
 	var application appsv1.Application
 	if err := r.Get(ctx, req.NamespacedName, &application); err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Return and don't requeue
 			return ctrl.Result{}, nil
@@ -69,9 +75,9 @@ func (r *ApplicationReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	dep := r.deploymentForApplication(&application)
 
 	// Check if this Deployment already exists
-	var found appsv1.Deployment
+	var found k8sappsv1.Deployment
 	err := r.Get(ctx, types.NamespacedName{Name: dep.Name, Namespace: dep.Namespace}, &found)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && apierrors.IsNotFound(err) {
 		// Create the Deployment
 		err = r.Create(ctx, dep)
 		if err != nil {
@@ -94,16 +100,16 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *ApplicationReconciler) deploymentForApplication(m *apps_v1.Application) *appsv1.Deployment {
+func (r *ApplicationReconciler) deploymentForApplication(m *appsv1.Application) *k8sappsv1.Deployment {
 	ls := labelsForApplication(m.Name)
 	replicas := m.Spec.Size
 
-	dep := &appsv1.Deployment{
+	dep := &k8sappsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      m.Name,
 			Namespace: m.Namespace,
 		},
-		Spec: appsv1.DeploymentSpec{
+		Spec: k8sappsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: ls,
