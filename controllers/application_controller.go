@@ -102,7 +102,7 @@ func (r *ApplicationReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *ApplicationReconciler) deploymentForApplication(m *appsv1.Application) *k8sappsv1.Deployment {
 	ls := labelsForApplication(m.Name)
-	replicas := m.Spec.Size
+	replicas := m.Spec.Replicas
 
 	dep := &k8sappsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{

@@ -32,7 +32,7 @@ type ApplicationSpec struct {
 	Image     string `json:"image,omitempty"`
 	Tag       string `json:"tag,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
-	Replicas  *int32 `json:"replicas,omitempty"`
+	Replicas  int32 `json:"replicas,omitempty"`
 }
 
 // ApplicationStatus defines the observed state of Application
